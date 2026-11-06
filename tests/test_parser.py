@@ -73,8 +73,14 @@ def test_crlf_and_bom_file(tmp_path):
     assert parse_file(path) == [Equation("X", "A", "+", "B", 1), Equation("Y", "X", "*", 2, 2)]
 
 
-def test_not_utf8(tmp_path):
-    path = tmp_path / "latin1.txt"
-    path.write_bytes(b"X = A + B # caf\xe9\n")
-    with pytest.raises(ValueError, match="is not UTF-8 text"):
+def test_cr_only_file(tmp_path):
+    path = tmp_path / "oldmac.txt"
+    path.write_bytes(b"X = A + B\rY = X * 2\r")
+    assert [e.line for e in parse_file(path)] == [1, 2]
+
+
+def test_not_utf8_names_line_and_byte(tmp_path):
+    path = tmp_path / "ansi.txt"
+    path.write_bytes(b"X = A + B\r\nY = X * 2\r\nZ = Y \x96 A\r\n")
+    with pytest.raises(ValueError, match=r"^line 3: byte 0x96 is not UTF-8 \(save .*ansi.txt as UTF-8\)$"):
         parse_file(path)

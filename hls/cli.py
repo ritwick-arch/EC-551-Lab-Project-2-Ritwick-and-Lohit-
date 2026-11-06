@@ -16,7 +16,12 @@ KINDS = ("add", "sub", "mul")
 LIMIT_MODES = ("casap", "calap")
 LATENCY_MODES = ("alap", "calap", "custom")
 MAX_LATENCY = 254
-_ASSIGN = re.compile(r"([A-Za-z][A-Za-z0-9_]*)=(0[xX][0-9A-Fa-f]+|[0-9]+)", re.ASCII)
+_ASSIGN = re.compile(r"([A-Za-z][A-Za-z0-9_]*)=([0-9]+)", re.ASCII)
+
+
+class _Parser(argparse.ArgumentParser):
+    def error(self, message):
+        sys.exit(f"error: {message}")
 
 
 def _check_flags(args):
@@ -38,14 +43,14 @@ def _check_flags(args):
 
 
 def _assignments(items, flag, program):
-    """Parse NAME=VALUE items (decimal or 0x hex) and check each NAME is an input."""
+    """Parse NAME=VALUE items and check each NAME is an input."""
     values = {}
     for item in items or []:
         m = _ASSIGN.fullmatch(item)
         if not m:
             raise ValueError(f"{flag} expects NAME=VALUE, got: {item}")
         name, text = m.groups()
-        value = int(text, 16) if text[:2] in ("0x", "0X") else int(text)
+        value = int(text)
         if value > MASK:
             raise ValueError(f"{flag} {name}={text}: values are 0-{MASK}")
         if name in values:
@@ -63,9 +68,9 @@ def _write(path, text):
 
 
 def main(argv=None):
-    ap = argparse.ArgumentParser(prog="hls", description="EC551 Program 2: equations to scheduled Verilog.")
+    ap = _Parser(prog="hls", description="EC551 Program 2: equations to scheduled Verilog.")
     ap.add_argument("file", help="equation file, one 'dst = a op b' per line")
-    ap.add_argument("--schedule", choices=MODES, default="asap", help="scheduling mode (default asap)")
+    ap.add_argument("--schedule", type=str.lower, choices=MODES, default="asap", help="scheduling mode (default asap)")
     for kind in KINDS:
         ap.add_argument(f"--{kind}", type=int, metavar="N", help=f"most {kind} units in use at once (casap, calap)")
     ap.add_argument("--latency", type=int, metavar="L", help="latency bound in steps (alap, calap, custom)")
@@ -95,7 +100,7 @@ def main(argv=None):
         if steps is None:
             sections.append(f"schedule ({args.schedule}): not implemented yet")
         print("\n\n".join(sections))
-        if args.export_ssa:
+        if args.export_ssa is not None:
             _write(args.export_ssa, ssa_text(program))
             print(f"wrote {args.export_ssa}")
     except (OSError, ValueError) as e:

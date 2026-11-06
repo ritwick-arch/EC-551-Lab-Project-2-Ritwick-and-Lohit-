@@ -41,6 +41,10 @@ def test_export_ssa(spec, tmp_path, capsys):
     (["--set", "A"], "--set expects NAME=VALUE, got: A"),
     (["--set", "A=1", "A=2"], "--set A is given twice"),
     (["--eval", "A=70000"], "--eval A=70000: values are 0-65535"),
+    (["--set", "A=0x1F"], "--set expects NAME=VALUE, got: A=0x1F"),
+    (["--schedule", "list"], "argument --schedule: invalid choice: 'list'"),
+    (["--schedule", "casap", "--mul", "two"], "argument --mul: invalid int value: 'two'"),
+    (["--frob"], "unrecognized arguments: --frob"),
 ])
 def test_flag_errors(spec, flags, message):
     with pytest.raises(SystemExit, match="^error: " + message.replace("+", r"\+")):
@@ -48,8 +52,13 @@ def test_flag_errors(spec, flags, message):
 
 
 def test_flags_accepted(spec):
-    assert main([str(spec), "--schedule", "calap", "--add", "1", "--latency", "6", "--mul-cycles", "2",
-                 "--set", "A=0x1F", "--eval", "A=3", "B=4"]) == 0
+    assert main([str(spec), "--schedule", "CALAP", "--add", "1", "--latency", "6", "--mul-cycles", "2",
+                 "--set", "A=31", "--eval", "A=3", "B=4"]) == 0
+
+
+def test_missing_file_argument(capsys):
+    with pytest.raises(SystemExit, match="^error: the following arguments are required: file$"):
+        main([])
 
 
 def test_missing_file_and_parse_error(tmp_path):
@@ -61,10 +70,8 @@ def test_missing_file_and_parse_error(tmp_path):
         main([str(bad)])
 
 
-def test_parse_error_writes_nothing(tmp_path):
-    bad = tmp_path / "bad.txt"
-    bad.write_text("X = A +\n")
-    target = tmp_path / "out.ssa.txt"
-    with pytest.raises(SystemExit):
-        main([str(bad), "--export-ssa", str(target)])
-    assert not target.exists()
+def test_error_after_parsing_writes_nothing(spec, tmp_path):
+    target = tmp_path / "sub" / "out.ssa.txt"
+    with pytest.raises(SystemExit, match="^error: --set E: "):
+        main([str(spec), "--set", "E=3", "--export-ssa", str(target)])
+    assert not target.parent.exists()
