@@ -75,3 +75,15 @@ Each decision goes here once we both agree on it.
   - **Reset:** every register clears on reset.
 - **Muxes:** each unit input (left and right) gets a mux over the registers and constants that port reads anywhere in the schedule, and the FSM sets its select each step. A port with only one source is a plain wire. Operands are never swapped.
 - Example: the spec example under ASAP with 1-cycle ops. add0 runs X in step 1 and Y in step 2, sub0 runs Z in step 2, and mul0 runs Q in step 3. add0's muxes are {A, X} on the left and {B, A} on the right. sub0 and mul0 have plain wires. The registers are A, B, X, Y, Z and Q.
+
+### G. FSM / sequencer (decided 11/6)
+
+- **States:** 0 = IDLE, 1…L = the schedule's steps, L+1 = DONE. The schedule is a straight line, so the state register is a counter. L is capped at 254 so the state fits in 2 hex digits.
+- **Transitions:**
+  - Each step pulse moves forward one state.
+  - The first press leaves IDLE and freezes the inputs. L more presses run the steps, so a run takes L+1 presses.
+  - A press in DONE does nothing.
+  - Reset returns to IDLE and clears every register.
+- **Outputs:** Moore-style. A `case (state)` drives named signals: each unit's mux selects (`sel_<unit>_a`/`_b`), each register's write-enable (`we_<value>`), and a `busy_<unit>` flag that is 1 in steps where the unit holds an op. Only these signals drive the muxes and registers. How the display uses `busy` is decided in H.
+- **Multi-step ops:** the selects are held for all of the op's steps, and the write-enable is asserted only in the last one (D).
+- **Clocking:** everything runs on the 100 MHz clock and changes only while the one-cycle step pulse is high. How the button produces that pulse is decided in H.
