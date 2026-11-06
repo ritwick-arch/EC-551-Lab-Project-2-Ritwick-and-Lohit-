@@ -1,3 +1,4 @@
+import codecs
 import re
 
 import pytest
@@ -71,6 +72,20 @@ def test_crlf_and_bom_file(tmp_path):
     path = tmp_path / "notepad.txt"
     path.write_bytes(b"\xef\xbb\xbfX = A + B\r\nY = X * 2\r\n")
     assert parse_file(path) == [Equation("X", "A", "+", "B", 1), Equation("Y", "X", "*", 2, 2)]
+
+
+@pytest.mark.parametrize("bom, codec", [(codecs.BOM_UTF16_LE, "utf-16-le"), (codecs.BOM_UTF16_BE, "utf-16-be")])
+def test_utf16_file(tmp_path, bom, codec):
+    path = tmp_path / "powershell.txt"
+    path.write_bytes(bom + "X = A + B\r\nY = X * 2\r\n".encode(codec))
+    assert parse_file(path) == [Equation("X", "A", "+", "B", 1), Equation("Y", "X", "*", 2, 2)]
+
+
+def test_bad_utf16_file(tmp_path):
+    path = tmp_path / "cut.txt"
+    path.write_bytes(codecs.BOM_UTF16_LE + "X = A + B".encode("utf-16-le") + b"\x00")
+    with pytest.raises(ValueError, match=r"^.*cut.txt is not valid UTF-16 \(save it as UTF-8\)$"):
+        parse_file(path)
 
 
 def test_cr_only_file(tmp_path):

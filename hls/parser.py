@@ -1,4 +1,5 @@
 """Read an equation file: one 'dst = a op b' per line."""
+import codecs
 import re
 from dataclasses import dataclass
 from pathlib import Path
@@ -58,11 +59,18 @@ def parse_text(text):
 
 
 def parse_file(path):
-    """Parse an equation file (UTF-8, with or without a BOM; any line endings)."""
+    """Parse an equation file (UTF-8 with or without a BOM, or UTF-16 with a BOM; any line endings)."""
     data = Path(path).read_bytes()
-    try:
-        text = data.decode("utf-8-sig")
-    except UnicodeDecodeError as e:
-        line = len((e.object[:e.start] + b".").splitlines())
-        raise ValueError(f"line {line}: byte 0x{e.object[e.start]:02X} is not UTF-8 (save {path} as UTF-8)") from None
+    # Windows PowerShell 5.1's '>' writes UTF-16 with a byte-order mark.
+    if data.startswith((codecs.BOM_UTF16_LE, codecs.BOM_UTF16_BE)):
+        try:
+            text = data.decode("utf-16")
+        except UnicodeDecodeError:
+            raise ValueError(f"{path} is not valid UTF-16 (save it as UTF-8)") from None
+    else:
+        try:
+            text = data.decode("utf-8-sig")
+        except UnicodeDecodeError as e:
+            line = len((e.object[:e.start] + b".").splitlines())
+            raise ValueError(f"line {line}: byte 0x{e.object[e.start]:02X} is not UTF-8 (save {path} as UTF-8)") from None
     return parse_text(text.replace("\r\n", "\n").replace("\r", "\n"))
