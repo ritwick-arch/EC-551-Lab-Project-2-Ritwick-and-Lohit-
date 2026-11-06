@@ -29,3 +29,16 @@ Each decision goes here once we both agree on it.
 - **Inputs:** names read before they're assigned, listed in order of first appearance.
 - **Outputs:** the final value of every assigned variable.
 - Equations are kept as written: duplicates aren't merged and unused results aren't dropped.
+
+### C. SSA naming and export (decided 11/6)
+
+- **Naming:** every value gets a version number. Inputs are `A_0`, and each assignment to `X` takes the next number: `X_1`, `X_2`, and so on.
+- **Why version every value:** the digits after the last `_` are always the version, so names can't collide. A user variable called `X_1` becomes `X_1_1`, and a variable called `reg` becomes `reg_1`, so no name can match a Verilog keyword.
+- **Export:** `--export-ssa FILE` writes the equations in the input's own `dst = a op b` format, in the original order, under a comment header that lists the inputs and outputs. The exported file is therefore a valid input file:
+  ```
+  # inputs: A_0 B_0
+  # outputs: X_2 Y_1
+  X_1 = A_0 + B_0
+  X_2 = X_1 * 2
+  Y_1 = X_2 - A_0
+  ```
