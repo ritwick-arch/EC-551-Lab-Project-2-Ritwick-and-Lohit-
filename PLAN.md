@@ -42,3 +42,11 @@ Each decision goes here once we both agree on it.
   X_2 = X_1 * 2
   Y_1 = X_2 - A_0
   ```
+
+### D. Timing model (decided 11/6)
+
+- **Control step:** one FSM state, which is one button press. During step *k* the units compute that step's ops from registers. On the next press the results are written and the FSM moves on.
+- **Latency per op type:** each type takes N steps, set with `--add-cycles N`, `--sub-cycles N` and `--mul-cycles N` (default 1, minimum 1). The total step count has to fit the state display, and H sets that limit.
+- **Unit occupancy:** a unit is busy for all N steps of its op; units aren't pipelined. An op can start only after every input has finished. Unit counts come from the most ops of a type running at once.
+- **Hardware:** the units stay combinational. For a multi-step op the FSM holds the unit's input mux selects for its N steps and enables the result register's write only in the last one. Every value has its own register that's written once (F), so operands stay put while a slow op runs.
+- Example with 1 multiplier and `--mul-cycles 2`: `P = A*B; Q = C*D; R = P+Q` runs P in steps 1–2, Q in 3–4 and R in 5, for a latency of 5. With 2 multipliers the latency is 3.
