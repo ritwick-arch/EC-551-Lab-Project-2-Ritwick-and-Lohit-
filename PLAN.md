@@ -19,13 +19,14 @@ Each decision goes here once we both agree on it.
 
 - **Line format:** one equation per line, written `dst = a op b`. Spaces are optional.
 - **Operations:** only the three in the spec: `+`, `-` (left minus right) and `*`. All three are unsigned, and results wrap at the datapath width chosen in H. Per the spec, negative results don't need handling.
-- **Names:** a letter first, then any mix of letters, digits and `_`. Names are case-sensitive.
+- **Names:** an ASCII letter first, then any mix of ASCII letters, digits and `_`. Names are case-sensitive.
 - **Operands:** a name, or a non-negative whole number that fits the datapath width (e.g. `Y = X * 3`).
-- **Skipped:** blank lines and `#` comments. Windows line endings and a UTF-8 BOM are accepted.
+- **Skipped:** blank lines and `#` comments. Windows line endings and a UTF-8 BOM are accepted, and so is one trailing `;` (amended 11/6).
 - **Errors:** the message names the line and nothing is generated. An error is raised for:
   - any other line shape: `X = A + B + C`, parentheses, `/`, `X = -A`, `X = A`, `3 = A + B`
   - an empty file
   - more than 20 equations
+- An error names any non-ASCII character in the line by its code point (amended 11/6). For example, U+2212 is a Unicode minus pasted from Word that looks like `-`.
 - **Inputs:** names read before they're assigned, listed in order of first appearance.
 - **Outputs:** the final value of every assigned variable.
 - Equations are kept as written: duplicates aren't merged and unused results aren't dropped.
@@ -61,7 +62,14 @@ Each decision goes here once we both agree on it.
 - `--schedule custom`: **still open**. The options:
   - (1) Fewest units for a target latency. The list scheduler inside it starts the op with the earliest ALAP time first. Measured, it uses fewer units than ASAP in 35% of 4–8-op programs and 71% of 4–20-op programs, and never more.
   - (2) Critical-path-first list scheduling under the limits. Measured, it gives the same result as `casap` about 88% of the time, and with no limits it is exactly ASAP.
-- Limits must be at least 1. A limit of 0 on a type the program uses is an error. `asap` and `alap` ignore the limits.
+- Limits must be at least 1. A limit of 0 on a type the program uses is an error. A limit for a type the program doesn't use is ignored.
+- **Flags per mode (amended 11/6):**
+  - `asap` takes no limit or latency flags.
+  - `alap` takes `--latency`.
+  - `casap` takes the limits.
+  - `calap` takes the limits and `--latency`.
+  - `custom` takes `--latency`.
+  - A flag the chosen mode doesn't use is an error, never silently ignored, e.g. `error: --mul is only used by casap and calap`.
 - Every run prints the DAG (each op and the ops it depends on), the step-by-step schedule, the latency and the number of units of each type.
 
 ### F. Datapath (decided 11/6)
@@ -122,3 +130,32 @@ Each decision goes here once we both agree on it.
   - LED0 lights in DONE.
 - **Dashes:** the value shows `----` for a unit with no op in the current step, a register that hasn't been written yet, or a code past the end of the table.
 - **What a unit shows:** in step k, a unit shows the result it's computing. That result is written to its register on the next press.
+
+### I. Command line, files, repo layout (decided 11/6)
+
+- **Command:** one-shot.
+  ```
+  python -m hls FILE [--schedule asap|alap|casap|calap|custom]
+         [--add N --sub N --mul N] [--latency L] [--add-cycles N --sub-cycles N --mul-cycles N]
+         [--set NAME=VALUE ...] [--eval NAME=VALUE ...] [--export-ssa FILE] [--out DIR]
+  ```
+  The default mode is `asap`.
+- **Every run prints** (ASCII only):
+  - the board map: which input is on which switch slot, plus the `--set` values
+  - the SSA
+  - the DAG table
+  - the schedule grid, with one row per step and one column per unit
+  - the unit counts, the latency and the number of presses
+  - the observe-code table
+- **`--out DIR`** writes `hls_core.v`, `testbench.v` and `schedule.txt` under these fixed names.
+- **`--eval NAME=VALUE ...`** prints the expected value of every register, and of each unit in each step, in hex (as the board shows it) and in decimal. It uses the same reference model as the testbench.
+- **Errors:** one `error: ...` line, exit code 1, nothing written, no traceback.
+- **Output files:** written with UTF-8 and `\n` line endings, and with no timestamps, so a rerun produces byte-identical files on any machine.
+- **Layout:**
+  - `hls/`: the Python package
+  - `rtl/`: `adder.v`, `subtractor.v`, `multiplier.v`, and `top.v` with the debounce and 7-seg logic
+  - `constraints/nexys_a7.xdc`: written fresh, because the uploaded master has the prelab names active and the clock commented out
+  - `examples/`: each example with its generated output (SSA, `schedule.txt`, `hls_core.v`, `testbench.v`, sim log) committed, since the spec asks for generated artifacts
+  - `tests/`
+  - `build/`: output of live runs, git-ignored
+- **Generated module:** always `hls_core` in `hls_core.v`, with a fixed port list, so `top.v` and the XDC never change.
