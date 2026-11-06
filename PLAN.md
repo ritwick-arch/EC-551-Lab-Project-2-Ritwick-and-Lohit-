@@ -62,7 +62,7 @@ Each decision goes here once we both agree on it.
 - `--schedule custom`: **still open**. The options:
   - (1) Fewest units for a target latency. The list scheduler inside it starts the op with the earliest ALAP time first. Measured, it uses fewer units than ASAP in 35% of 4–8-op programs and 71% of 4–20-op programs, and never more.
   - (2) Critical-path-first list scheduling under the limits. Measured, it gives the same result as `casap` about 88% of the time, and with no limits it is exactly ASAP.
-- Limits must be at least 1. A limit of 0 on a type the program uses is an error. A limit for a type the program doesn't use is ignored.
+- Limits must be at least 1, even for a type the program doesn't use. A valid limit for a type the program doesn't use is ignored.
 - **Flags per mode (amended 11/6):**
   - `asap` takes no limit or latency flags.
   - `alap` takes `--latency`.
@@ -148,7 +148,8 @@ Each decision goes here once we both agree on it.
   - the unit counts, the latency and the number of presses
   - the observe-code table
 - **`--out DIR`** writes `hls_core.v`, `testbench.v` and `schedule.txt` under these fixed names.
-- **`--eval NAME=VALUE ...`** prints the expected value of every register, and of each unit in each step, in hex (as the board shows it) and in decimal. It uses the same reference model as the testbench.
+- **`--eval NAME=VALUE ...`** prints the expected value of every register, and of each unit in each step, in hex (as the board shows it) and in decimal. It evaluates the same equations as the testbench's reference, and pytest cross-checks the two.
+- **Flag values:** mode names are case-insensitive (`--schedule ASAP` works). `--set` and `--eval` values are decimal.
 - **Errors:** one `error: ...` line, exit code 1, nothing written, no traceback.
 - **Output files:** written with UTF-8 and `\n` line endings, and with no timestamps, so a rerun produces byte-identical files on any machine.
 - **Layout:**
