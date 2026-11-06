@@ -1,0 +1,5 @@
+# The assignment's own example (section 1).
+X = A + B
+Y = X + A
+Z = X - B
+Q = B * Z
