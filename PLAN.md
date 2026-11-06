@@ -88,3 +88,37 @@ Each decision goes here once we both agree on it.
 - **Naming rule (amended 11/6):** every generated helper name ends in a letter suffix (`X_1_we`, `add0_sel_a`, `add0_busy`). SSA names always end in `_<digits>`, so the two can never collide. Prefix names like `we_X_1` could collide, for example with a user variable named `we_X`.
 - **Multi-step ops:** the selects are held for all of the op's steps, and the write-enable is asserted only in the last one (D).
 - **Clocking:** everything runs on the 100 MHz clock and changes only while the one-cycle step pulse is high. How the button produces that pulse is decided in H.
+
+### H. Board I/O (decided 11/6)
+
+- **Width:** 16-bit unsigned datapath.
+  - Each switch input is one hex digit (4 bits, zero-extended).
+  - Constants and `--set` values are 0–65535; anything larger is an error.
+  - Results wrap mod 2^16. A final result that fits in 16 bits is still exact even if an intermediate step overflowed or went negative.
+  - There is no overflow warning.
+- **Switches:**
+  - SW15–12 pick the observe code within the current page.
+  - SW11–8, SW7–4 and SW3–0 are input slots 1–3, filled in the order the inputs first appear.
+  - SW8 and SW9 are LVCMOS18.
+- **Extra inputs:**
+  - More inputs than slots is an error that names them, unless the extras are hardcoded with `--set NAME=VALUE`. That also frees their slots.
+  - `--set` on a name that isn't an input is an error, and so is a duplicate `--set`.
+  - This check only runs when generating Verilog. The tool prints the board map.
+- **Buttons:**
+  - BTNC = step, BTNU = next observe page (wraps around, cleared on reset), CPU_RESETN = reset.
+  - In `top.v`, BTNC and BTNU are synchronized, debounced (sampled every ~10 ms) and edge-detected into one-cycle pulses.
+  - BTNC is never used as a clock: its pin isn't clock-capable and the button bounces.
+  - There is no free-running mode.
+- **Reset:**
+  - CPU_RESETN is synchronized and applied as a synchronous reset: back to IDLE, results cleared, page 0.
+  - Power-up starts in the same state.
+  - Inputs follow the switches in IDLE and freeze on the first press (F, G).
+- **Observe codes:**
+  - Code = 16 × page + SW15–12.
+  - Order: every unit (adders, then subtractors, then multipliers, by index), then every result register in equation order with outputs marked, then the switch inputs.
+  - At most 44 codes, so the code is 6 bits. The tool prints the code table in the same 2-digit hex.
+- **Display (hex):**
+  - Format `SS.CC.VVVV`: state (00 = IDLE, 01…L = steps, L+1 = DONE), observe code, then value, with decimal points between the fields.
+  - LED0 lights in DONE.
+- **Dashes:** the value shows `----` for a unit with no op in the current step, a register that hasn't been written yet, or a code past the end of the table.
+- **What a unit shows:** in step k, a unit shows the result it's computing. That result is written to its register on the next press.
