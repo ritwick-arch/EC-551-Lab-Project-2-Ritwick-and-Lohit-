@@ -231,3 +231,17 @@ def schedule(dag, mode, limits=None, latency=None, cycles=None) -> list[int]:
 - **Suggested for Ritwick (his call):** build all five modes on one `place(order, limits, cycles)` helper.
   - It puts each op at the first step where its inputs are done and a unit of its type is free for all N steps.
   - The backward modes run it on the reversed DAG and mirror the result.
+
+### L. Build flow and demo machine (decided 11/6)
+
+- **Demo machine:** Lohit's ThinkPad, which has Python, Vivado 2025.1 and the board together.
+  - The repo lives outside OneDrive (e.g. `C:/Users/daksh/ec551/`), because OneDrive locks Vivado's run files.
+  - Still to confirm: Python 3.10+ on the laptop (the `str | int` hints in K need it), and where the board is for the first smoke test.
+- **Build:**
+  - One batch script per run: `vivado -mode batch -source scripts/build.tcl`.
+  - It reads the fixed RTL, `build/hls_core.v` and the XDC, runs synthesis and place-and-route, writes the bitstream, and programs the board.
+  - It includes `set_param labtools.enable_cs_server false` before `open_hw_manager`.
+  - There is no project file, so the Vivado version doesn't matter (2025.1 on the laptop, 2024.1 in the lab).
+- **Live simulation:** `scripts/sim` runs `xvlog/xelab/xsim` on `testbench.v` from the command line. SCC uses Icarus instead.
+- **Build time:** unmeasured. We'll measure it at the first board test; the demo plan covers the software walkthrough while a build runs.
+- **Fallback:** pre-built bitstreams of two prepared examples, kept on the laptop.
