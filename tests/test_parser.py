@@ -31,10 +31,10 @@ def test_rejected(line):
 
 
 @pytest.mark.parametrize("line, code", [
-    ("X = A − B", "U+2212"),        # Unicode minus that looks like '-'
-    ("X = Ä + B", "U+00C4"),
-    ("X = A + ٣", "U+0663"),        # Arabic-Indic digit three
-    ("X = A + B", "U+00A0"),        # no-break space
+    ("X = A \u2212 B", "U+2212"),        # Unicode minus that looks like '-'
+    ("X = \u00c4 + B", "U+00C4"),
+    ("X = A + \u0663", "U+0663"),        # Arabic-Indic digit three
+    ("X =\u00a0A + B", "U+00A0"),        # no-break space
 ])
 def test_non_ascii_named(line, code):
     with pytest.raises(ValueError, match=re.escape(code)) as e:
