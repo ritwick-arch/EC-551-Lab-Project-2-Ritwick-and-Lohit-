@@ -84,6 +84,7 @@ Each decision goes here once we both agree on it.
   - The first press leaves IDLE and freezes the inputs. L more presses run the steps, so a run takes L+1 presses.
   - A press in DONE does nothing.
   - Reset returns to IDLE and clears every register.
-- **Outputs:** Moore-style. A `case (state)` drives named signals: each unit's mux selects (`sel_<unit>_a`/`_b`), each register's write-enable (`we_<value>`), and a `busy_<unit>` flag that is 1 in steps where the unit holds an op. Only these signals drive the muxes and registers. How the display uses `busy` is decided in H.
+- **Outputs:** Moore-style. A `case (state)` drives named signals: each unit's mux selects (`<unit>_sel_a`/`_sel_b`), each register's write-enable (`<value>_we`), and a `<unit>_busy` flag that is 1 in steps where the unit holds an op. Only these signals drive the muxes and registers. H describes how the display uses `busy`.
+- **Naming rule (amended 11/6):** every generated helper name ends in a letter suffix (`X_1_we`, `add0_sel_a`, `add0_busy`). SSA names always end in `_<digits>`, so the two can never collide. Prefix names like `we_X_1` could collide, for example with a user variable named `we_X`.
 - **Multi-step ops:** the selects are held for all of the op's steps, and the write-enable is asserted only in the last one (D).
 - **Clocking:** everything runs on the 100 MHz clock and changes only while the one-cycle step pulse is high. How the button produces that pulse is decided in H.
