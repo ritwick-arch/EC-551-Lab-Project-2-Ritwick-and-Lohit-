@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+docs/
+build/
+.Xil/
+xsim.dir/
+*.jou
+vivado*.log
+xvlog.*
+xelab.*
+xsim*.log
+webtalk*
+usage_statistics_webtalk.*
+*.vvp
