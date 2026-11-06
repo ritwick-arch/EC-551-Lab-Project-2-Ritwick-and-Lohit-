@@ -50,3 +50,14 @@ Each decision goes here once we both agree on it.
 - **Unit occupancy:** a unit is busy for all N steps of its op; units aren't pipelined. An op can start only after every input has finished. Unit counts come from the most ops of a type running at once.
 - **Hardware:** the units stay combinational. For a multi-step op the FSM holds the unit's input mux selects for its N steps and enables the result register's write only in the last one. Every value has its own register that's written once (F), so operands stay put while a slow op runs.
 - Example with 1 multiplier and `--mul-cycles 2`: `P = A*B; Q = C*D; R = P+Q` runs P in steps 1–2, Q in 3–4 and R in 5, for a latency of 5. With 2 multipliers the latency is 3.
+
+### E. Schedulers (decided 11/6, except custom)
+
+- **Shared rules:** every mode uses D's timing: an op holds its unit for its N steps and can start only once all its inputs have finished. Ties go to the equation written first, so every run gives the same result.
+- `--schedule asap`: each op starts as soon as its inputs are ready, with unlimited units.
+- `--schedule alap`: each op starts as late as it can while the program still ends by step L. L is set with `--latency L` and defaults to the ASAP length. L shorter than the critical path is an error.
+- `--schedule casap`: list scheduling. It goes step by step and starts ready ops while a unit of their type is free. Limits are set with `--add/--sub/--mul N`; a type with no limit is unlimited.
+- `--schedule calap`: the same list scheduler run backward, placing the last ops first, then flipped. With `--latency L` the schedule is shifted to end at step L. It's an error if the limits can't fit in L.
+- `--schedule custom`: **still open**. Either (1) fewest units for a target latency, or (2) least-slack-first list scheduling under the limits.
+- Limits must be at least 1. A limit of 0 on a type the program uses is an error. `asap` and `alap` ignore the limits.
+- Every run prints the DAG (each op and the ops it depends on), the step-by-step schedule, the latency and the number of units of each type.
