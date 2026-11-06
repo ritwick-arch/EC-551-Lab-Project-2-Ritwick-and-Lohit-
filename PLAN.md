@@ -21,7 +21,11 @@ Each decision goes here once we both agree on it.
 - **Operations:** only the three in the spec: `+`, `-` (left minus right) and `*`. All three are unsigned, and results wrap at the datapath width chosen in H. Per the spec, negative results don't need handling.
 - **Names:** an ASCII letter first, then any mix of ASCII letters, digits and `_`. Names are case-sensitive.
 - **Operands:** a name, or a non-negative whole number that fits the datapath width (e.g. `Y = X * 3`).
-- **Skipped:** blank lines and `#` comments. Windows line endings and a UTF-8 BOM are accepted, and so is one trailing `;` (amended 11/6).
+- **Skipped:** blank lines and `#` comments. One trailing `;` is accepted (amended 11/6).
+- **File encoding (amended 11/6):**
+  - UTF-8 with or without a BOM, or UTF-16 with a BOM, which is what `echo ... > file` writes in Windows PowerShell 5.1.
+  - Any line endings are accepted.
+  - Any other file that isn't valid UTF-8 is an error that names the line and the bad byte.
 - **Errors:** the message names the line and nothing is generated. An error is raised for:
   - any other line shape: `X = A + B + C`, parentheses, `/`, `X = -A`, `X = A`, `3 = A + B`
   - an empty file
@@ -158,8 +162,16 @@ Each decision goes here once we both agree on it.
   - `constraints/nexys_a7.xdc`: written fresh, because the uploaded master has the prelab names active and the clock commented out
   - `examples/`: each example with its generated output (SSA, `schedule.txt`, `hls_core.v`, `testbench.v`, sim log) committed, since the spec asks for generated artifacts
   - `tests/`
-  - `build/`: output of live runs, git-ignored
-- **Generated module:** always `hls_core` in `hls_core.v`, with a fixed port list, so `top.v` and the XDC never change.
+  - `build/`: one folder per live run (L), git-ignored
+- **Generated module (port list frozen 11/6):** always `hls_core` in `hls_core.v`, with this port list, so `top.v` and the XDC never change:
+  ```verilog
+  module hls_core(input clk, rst, step, input [11:0] sw,   // 3 switch slots
+                  input [5:0] code,                         // {page, SW15-12}
+                  output [15:0] value, output valid,        // valid = 0 shows ----
+                  output [7:0] state, output done);
+  ```
+  - The core takes all of SW11–0, so the testbench can loop over all 4096 switch values.
+  - `top.v` holds the BTNU page counter. It is 2 bits wide, so the page wraps from 3 back to 0.
 
 ### J. Verification (decided 11/6)
 
@@ -238,11 +250,14 @@ def schedule(dag, mode, limits=None, latency=None, cycles=None) -> list[int]:
 - **Demo machine:** Lohit's ThinkPad, which has Python, Vivado 2025.1 and the board together.
   - The repo lives outside OneDrive (e.g. `C:/Users/daksh/ec551/`), because OneDrive locks Vivado's run files.
   - Still to confirm: Python 3.10+ on the laptop (the `str | int` hints in K need it), and where the board is for the first smoke test.
-- **Build:**
-  - One batch script per run: `vivado -mode batch -source scripts/build.tcl`.
-  - It reads the fixed RTL, `build/hls_core.v` and the XDC, runs synthesis and place-and-route, writes the bitstream, and programs the board.
-  - It includes `set_param labtools.enable_cs_server false` before `open_hw_manager`.
+- **One folder per run (amended 11/6):** each run writes to its own folder (`--out build/run1`, then `build/run2`, …). Each script below takes that folder as its argument, so a later run can't overwrite an earlier run's files.
+- **Build:** `vivado -mode batch -source scripts/build.tcl -tclargs build/run1`.
+  - It reads the fixed RTL, the folder's `hls_core.v` and the XDC, runs synthesis and place-and-route, and writes the bitstream into the folder.
+  - It doesn't program the board, so a build running in the background can't reprogram the board in the middle of the professor's check.
   - There is no project file, so the Vivado version doesn't matter (2025.1 on the laptop, 2024.1 in the lab).
-- **Live simulation:** `scripts/sim` runs `xvlog/xelab/xsim` on `testbench.v` from the command line. SCC uses Icarus instead.
+- **Program:** `vivado -mode batch -source scripts/program.tcl -tclargs build/run1` loads that folder's bitstream onto the board.
+  - It runs `catch {set_param labtools.enable_cs_server false}` before `open_hw_manager`.
+  - The `catch` keeps the script working on a Vivado version that lacks that setting. We haven't checked 2024.1.
+- **Live simulation:** `scripts/sim build/run1` runs `xvlog/xelab/xsim` on the folder's `testbench.v` from the command line. SCC uses Icarus instead.
 - **Build time:** unmeasured. We'll measure it at the first board test; the demo plan covers the software walkthrough while a build runs.
 - **Fallback:** pre-built bitstreams of two prepared examples, kept on the laptop.
