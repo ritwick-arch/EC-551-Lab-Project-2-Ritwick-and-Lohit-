@@ -57,8 +57,10 @@ Each decision goes here once we both agree on it.
 - `--schedule asap`: each op starts as soon as its inputs are ready, with unlimited units.
 - `--schedule alap`: each op starts as late as it can while the program still ends by step L. L is set with `--latency L` and defaults to the ASAP length. L shorter than the critical path is an error.
 - `--schedule casap`: list scheduling. It goes step by step and starts ready ops while a unit of their type is free. Limits are set with `--add/--sub/--mul N`; a type with no limit is unlimited.
-- `--schedule calap`: the same list scheduler run backward, placing the last ops first, then flipped. With `--latency L` the schedule is shifted to end at step L. It's an error if the limits can't fit in L.
-- `--schedule custom`: **still open**. Either (1) fewest units for a target latency, or (2) least-slack-first list scheduling under the limits.
+- `--schedule calap`: the same list scheduler run backward, then flipped. The backward pass starts from every op whose result nothing reads, including overwritten values B keeps, not only from outputs. It places the op with the largest ASAP time first, which is the backward form of critical-path-first. Measured on random programs, that makes it longer than `casap` in under 1% of cases, compared with about a third for reverse equation order. With `--latency L` the schedule is shifted to end at step L. It's an error if the limits can't fit in L. (Amended 11/6.)
+- `--schedule custom`: **still open**. The options:
+  - (1) Fewest units for a target latency. The list scheduler inside it starts the op with the earliest ALAP time first. Measured, it uses fewer units than ASAP in 35% of 4–8-op programs and 71% of 4–20-op programs, and never more.
+  - (2) Critical-path-first list scheduling under the limits. Measured, it gives the same result as `casap` about 88% of the time, and with no limits it is exactly ASAP.
 - Limits must be at least 1. A limit of 0 on a type the program uses is an error. `asap` and `alap` ignore the limits.
 - Every run prints the DAG (each op and the ops it depends on), the step-by-step schedule, the latency and the number of units of each type.
 
