@@ -190,3 +190,44 @@ Each decision goes here once we both agree on it.
   - overflow and negative results
   - a file with errors
 - **Board:** an early smoke test with the spec example, to check the debounce, the 7-seg display and the XDC.
+
+### K. Front end to scheduler hand-off (decided 11/6)
+
+```python
+@dataclass(frozen=True)
+class Op:
+    index: int      # 0-based, in line order
+    dst: str        # SSA name, e.g. 'Y_2'
+    kind: str       # 'add' | 'sub' | 'mul'
+    a: str | int    # SSA name or constant
+    b: str | int
+    line: int       # line number in the input file
+
+@dataclass
+class DAG:
+    ops: list[Op]             # line order
+    preds: list[list[int]]    # ops each op reads (deduplicated)
+    succs: list[list[int]]    # ops that read each op
+
+def schedule(dag, mode, limits=None, latency=None, cycles=None) -> list[int]:
+    """Start step (1-based) of each op; raises ValueError with a user-facing message."""
+```
+
+- **Arguments:**
+  - `limits`: e.g. `{'mul': 1}`. A missing type is unlimited.
+  - `cycles`: e.g. `{'add': 1, 'sub': 1, 'mul': 2}`.
+- **What `schedule()` returns:**
+  - Start steps only.
+  - The generator works out latency, unit counts and binding (F).
+  - The generator checks the schedule (dependencies, limits, bound) before it writes any Verilog.
+- **Determinism:**
+  - Everything is a list in line order.
+  - Ties are broken by line.
+  - Nothing iterates over a set, because set order changes between runs.
+- **Who builds what:**
+  - Lohit: `Op`/`DAG` (parser → SSA → DAG) and the generator.
+  - Ritwick: `schedule()` and J's property tests, which need only random DAGs.
+  - A stub module with these signatures is committed first, so both sides can start in parallel.
+- **Suggested for Ritwick (his call):** build all five modes on one `place(order, limits, cycles)` helper.
+  - It puts each op at the first step where its inputs are done and a unit of its type is free for all N steps.
+  - The backward modes run it on the reversed DAG and mirror the result.
