@@ -61,3 +61,15 @@ Each decision goes here once we both agree on it.
 - `--schedule custom`: **still open**. Either (1) fewest units for a target latency, or (2) least-slack-first list scheduling under the limits.
 - Limits must be at least 1. A limit of 0 on a type the program uses is an error. `asap` and `alap` ignore the limits.
 - Every run prints the DAG (each op and the ops it depends on), the step-by-step schedule, the latency and the number of units of each type.
+
+### F. Datapath (decided 11/6)
+
+- **Units:** the count for each type is the most ops of that type running at once in any step. A multi-step op counts in every step it holds.
+- **Binding:** ops are taken in start order. Each goes on the lowest-numbered unit of its type that's free for all of its steps (left-edge), so no more units are needed than the count above.
+- **Registers:** one per value, never shared.
+  - **Op results:** each result register is written in its op's last step, straight from its unit's output. It needs a write-enable from the FSM and no input mux.
+  - **Switch inputs:** they follow the switches while the FSM is idle and freeze once stepping starts.
+  - **Constants and hardcoded inputs:** plain Verilog constants, with no register.
+  - **Reset:** every register clears on reset.
+- **Muxes:** each unit input (left and right) gets a mux over the registers and constants that port reads anywhere in the schedule, and the FSM sets its select each step. A port with only one source is a plain wire. Operands are never swapped.
+- Example: the spec example under ASAP with 1-cycle ops. add0 runs X in step 1 and Y in step 2, sub0 runs Z in step 2, and mul0 runs Q in step 3. add0's muxes are {A, X} on the left and {B, A} on the right. sub0 and mul0 have plain wires. The registers are A, B, X, Y, Z and Q.
