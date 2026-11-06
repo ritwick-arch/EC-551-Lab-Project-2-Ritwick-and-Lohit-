@@ -159,3 +159,34 @@ Each decision goes here once we both agree on it.
   - `tests/`
   - `build/`: output of live runs, git-ignored
 - **Generated module:** always `hls_core` in `hls_core.v`, with a fixed port list, so `top.v` and the XDC never change.
+
+### J. Verification (decided 11/6)
+
+- **pytest, Python side:**
+  - Parser accept/reject cases, SSA and DAG.
+  - Scheduler property checks on thousands of random programs:
+    - every dependency is respected
+    - unit limits and the latency bound hold
+    - every op is scheduled exactly once
+    - `casap` with no limits equals `asap`, and `calap` with no limits equals `alap`
+    - `custom` never uses more units than ASAP
+    - the error cases fire
+- **Generated Verilog on SCC:** each example's `hls_core.v` and the fixed RTL get Verilator lint (`-Wall`) and a Yosys synthesis check, which catches accidental latches.
+- **`testbench.v`, generated per design:**
+  - **DUT:** `hls_core`, with `step` pulsed directly. `top.v` is not simulated, because its debouncer makes each press about a million cycles.
+  - **Reference:** the SSA equations written directly in the testbench, one Verilog line each and masked to 16 bits, with no schedule, binding or FSM involved.
+  - **Inputs:** every switch setting, at most 16³ = 4096.
+  - **Each run:** reset, set the switches, press L+1 times, check `done`, then read every register through the observe port and compare.
+  - **Output:** the first few mismatches, then a final `PASS n/n` or `FAIL` line. It runs in Icarus on SCC (`module load yosys/0.48` provides Icarus 12.0) and in Vivado xsim.
+- **End-to-end on SCC:** pytest generates designs for the examples and for random programs (all 5 modes, 1- and 2-cycle multiply), simulates each `testbench.v` with Icarus and expects PASS. It also cross-checks the Python model behind `--eval`.
+- **Examples (`examples/`):**
+  - the spec example
+  - a file where all 5 schedules differ
+  - reassignment, including a reassigned input
+  - `A = A + A`
+  - a constant-only op
+  - 20 equations
+  - more than 16 codes (paging)
+  - overflow and negative results
+  - a file with errors
+- **Board:** an early smoke test with the spec example, to check the debounce, the 7-seg display and the XDC.
