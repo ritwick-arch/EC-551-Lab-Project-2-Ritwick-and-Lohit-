@@ -17,3 +17,5 @@ usage_statistics_webtalk.*
 *.rpt
 *.pb
 *.wdb
+clockInfo.txt
+dfx_runtime.txt

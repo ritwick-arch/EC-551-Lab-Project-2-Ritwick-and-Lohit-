@@ -263,7 +263,7 @@ def schedule(dag, mode, limits=None, latency=None, cycles=None) -> list[int]:
   - It runs `catch {set_param labtools.enable_cs_server false}` before `open_hw_manager`.
   - The `catch` keeps the script working on a Vivado version that lacks that setting. We haven't checked 2024.1.
 - **Live simulation:** `vivado -mode batch -source scripts/sim.tcl -tclargs build/run1` runs `xvlog/xelab/xsim` on the folder's `testbench.v` and writes `sim.log` there. SCC uses Icarus instead.
-- **Build time:** unmeasured. We'll measure it at the first board test; the demo plan covers the software walkthrough while a build runs.
+- **Build time (measured 11/7 on the ThinkPad, spec example):** 127 s for the whole build, 111 s of it inside Vivado, with timing met at 100 MHz (WNS +2.07 ns). The simulation takes 14 s. A 20-equation design still needs timing once the generator exists.
 - **Fallback:** pre-built bitstreams of two prepared examples, kept on the laptop.
 
 ### M. Demo plan (decided 11/7)
@@ -278,7 +278,7 @@ The spec's rules: fit strictly in 30 minutes, show every part of the software an
   4. While it builds, we walk through the printed output and `hls_core.v`, then show the testbench's `PASS 4096/4096`.
   5. We program the board. He picks switch values, and `--eval` with the build's flags prints the values he should see.
   6. He steps with BTNC, switching the observe code between units, and checks every output once the run reaches DONE.
-- **Timeline,** assuming a build takes at most 5 minutes. The README gets the measured numbers.
+- **Timeline,** assuming a build takes at most 5 minutes. The first measured build took about 2 minutes (L), so this has room to spare. The README gets the final numbers.
 
   | min | who | what |
   |---|---|---|
@@ -291,7 +291,7 @@ The spec's rules: fit strictly in 30 minutes, show every part of the software an
   | 18–23 | both | Run 3's output, then run 3 on the board. |
   | 23–30 | both | Buffer: his questions, a bad line to show an error message, or a fallback. |
 
-- **If he wants to see each run on the board before writing the next,** three runs fit only if a build takes about 3 minutes or less.
+- **If he wants to see each run on the board before writing the next,** three runs fit only if a build takes about 3 minutes or less. The spec example's 2-minute build is under that.
 - **Where each spec item is shown:**
   - Parse errors: one deliberately bad line.
   - SSA, `--export-ssa`, DAG and all five schedulers: run 1. The tool prints the other four schedules without building them.
