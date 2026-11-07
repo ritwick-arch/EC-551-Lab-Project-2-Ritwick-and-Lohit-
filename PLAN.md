@@ -56,16 +56,20 @@ Each decision goes here once we both agree on it.
 - **Hardware:** the units stay combinational. For a multi-step op the FSM holds the unit's input mux selects for its N steps and enables the result register's write only in the last one. Every value has its own register that's written once (F), so operands stay put while a slow op runs.
 - Example with 1 multiplier and `--mul-cycles 2`: `P = A*B; Q = C*D; R = P+Q` runs P in steps 1–2, Q in 3–4 and R in 5, for a latency of 5. With 2 multipliers the latency is 3.
 
-### E. Schedulers (decided 11/6, except custom)
+### E. Schedulers (decided 11/6; custom 11/7)
 
 - **Shared rules:** every mode uses D's timing: an op holds its unit for its N steps and can start only once all its inputs have finished. Ties go to the equation written first, so every run gives the same result.
 - `--schedule asap`: each op starts as soon as its inputs are ready, with unlimited units.
 - `--schedule alap`: each op starts as late as it can while the program still ends by step L. L is set with `--latency L` and defaults to the ASAP length. L shorter than the critical path is an error.
 - `--schedule casap`: list scheduling. It goes step by step and starts ready ops while a unit of their type is free. Limits are set with `--add/--sub/--mul N`; a type with no limit is unlimited.
 - `--schedule calap`: the same list scheduler run backward, then flipped. The backward pass starts from every op whose result nothing reads, including overwritten values B keeps, not only from outputs. It places the op with the largest ASAP time first, which is the backward form of critical-path-first. Measured on random programs, that makes it longer than `casap` in under 1% of cases, compared with about a third for reverse equation order. With `--latency L` the schedule is shifted to end at step L. It's an error if the limits can't fit in L. (Amended 11/6.)
-- `--schedule custom`: **still open**. The options:
-  - (1) Fewest units for a target latency. The list scheduler inside it starts the op with the earliest ALAP time first. Measured, it uses fewer units than ASAP in 35% of 4–8-op programs and 71% of 4–20-op programs, and never more.
-  - (2) Critical-path-first list scheduling under the limits. Measured, it gives the same result as `casap` about 88% of the time, and with no limits it is exactly ASAP.
+- `--schedule custom` (decided 11/7): the fewest units that still finish by a target latency.
+  - The target is `--latency L`, which defaults to the ASAP length. L shorter than the critical path is an error.
+  - It tries unit budgets in order: fewest units in total, then fewest multipliers, then fewest adders. Each type the program uses goes from 1 up to its number of ops.
+  - For each budget it runs `casap` and then `calap` with that budget, and returns the first schedule that ends by step L.
+  - So it never needs more units in total than any other mode at the same latency. ASAP is `casap` at ASAP's unit counts, and ALAP is `calap` at ALAP's.
+  - It prints the target, the unit counts it found, and whether `casap` or `calap` found them.
+  - On small programs the default latency often leaves no room to save units, so the demo runs it with `--latency` one step above the minimum.
 - Limits must be at least 1, even for a type the program doesn't use. A valid limit for a type the program doesn't use is ignored.
 - **Flags per mode (amended 11/6):**
   - `asap` takes no limit or latency flags.
@@ -261,3 +265,42 @@ def schedule(dag, mode, limits=None, latency=None, cycles=None) -> list[int]:
 - **Live simulation:** `scripts/sim build/run1` runs `xvlog/xelab/xsim` on the folder's `testbench.v` from the command line. SCC uses Icarus instead.
 - **Build time:** unmeasured. We'll measure it at the first board test; the demo plan covers the software walkthrough while a build runs.
 - **Fallback:** pre-built bitstreams of two prepared examples, kept on the laptop.
+
+### M. Demo plan (decided 11/7)
+
+The spec's rules: fit strictly in 30 minutes, show every part of the software and hardware, and let the professor write equations on the spot, compile them, run the FPGA and check the outputs, in three runs he directs.
+
+- **Shape:** the runs overlap. Each run's build starts as soon as it compiles, and we explain that run while it builds. We ask for the next run's equations while the current run is on the board.
+- **Every run follows the same steps:**
+  1. He writes his equations in Notepad as `build/runN.txt`. Before run 1 he gets a rules card: the line format, 16-bit wraparound, the first three inputs on the switches as one hex digit each, and `--set` for any others.
+  2. We compile with his mode and limits: `python -m hls build/runN.txt --schedule ... --out build/runN`.
+  3. We start the build and the simulation in a second window.
+  4. While it builds, we walk through the printed output and `hls_core.v`, then show the testbench's `PASS 4096/4096`.
+  5. We program the board. He picks switch values, and `--eval` with the build's flags prints the values he should see.
+  6. He steps with BTNC, switching the observe code between units, and checks every output once the run reaches DONE.
+- **Timeline,** assuming a build takes at most 5 minutes. The README gets the measured numbers.
+
+  | min | who | what |
+  |---|---|---|
+  | 0–2 | Ritwick | Architecture in one picture, and why BTNC is a clock enable rather than a clock. He writes run 1. |
+  | 2–8 | Lohit | Run 1: compile, start the build and sim. Then SSA, DAG, all five schedules for his equations, `hls_core.v`, PASS. Ask for run 2. |
+  | 8–9 | Lohit | Compile run 2 and start its build. |
+  | 9–13 | Ritwick | Run 1 on the board. |
+  | 13–14 | Lohit | Run 2's output: what his limits changed. He writes run 3. |
+  | 14–18 | Ritwick | Run 2 on the board, while Lohit starts run 3's build. |
+  | 18–23 | both | Run 3's output, then run 3 on the board. |
+  | 23–30 | both | Buffer: his questions, a bad line to show an error message, or a fallback. |
+
+- **If he wants to see each run on the board before writing the next,** three runs fit only if a build takes about 3 minutes or less.
+- **Where each spec item is shown:**
+  - Parse errors: one deliberately bad line.
+  - SSA, `--export-ssa`, DAG and all five schedulers: run 1. The tool prints the other four schedules without building them.
+  - Muxes, registers, FSM and unit counts: `hls_core.v` in run 1, then what changed in runs 2 and 3.
+  - Testbench, build and flash, step button, observe select, 7-seg: every run.
+- **Fallbacks:**
+  - The build fails or isn't done after about 8 minutes: show his run passing in simulation, continue on the board with a prebuilt example of the same mode (L), and return to his run when the build finishes.
+  - Programming fails: replug the USB and rerun `program.tcl`.
+  - The tool rejects his input: the error names the line, and we fix it with him.
+- **Before the slot:** the laptop is on power with sleep turned off, the repo is at the submitted version, the board shows a prebuilt example, two PowerShell windows are open, and the README has a copy-paste command block.
+- **Roles:** Lohit drives the laptop (the tool and Vivado) and Ritwick the board. They swap for one run, so each shows the other's half. Ritwick still has to agree.
+- **Runs:** the professor picks all three. If he asks for ideas: a constrained mode with tight limits, then `custom` with `--latency` one step above the minimum, or `--mul-cycles 2`.
