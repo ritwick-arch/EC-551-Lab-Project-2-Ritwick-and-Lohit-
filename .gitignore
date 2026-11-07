@@ -13,3 +13,7 @@ xsim*.log
 webtalk*
 usage_statistics_webtalk.*
 *.vvp
+*.bit
+*.rpt
+*.pb
+*.wdb

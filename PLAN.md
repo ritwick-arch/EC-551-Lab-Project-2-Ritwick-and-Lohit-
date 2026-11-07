@@ -262,7 +262,7 @@ def schedule(dag, mode, limits=None, latency=None, cycles=None) -> list[int]:
 - **Program:** `vivado -mode batch -source scripts/program.tcl -tclargs build/run1` loads that folder's bitstream onto the board.
   - It runs `catch {set_param labtools.enable_cs_server false}` before `open_hw_manager`.
   - The `catch` keeps the script working on a Vivado version that lacks that setting. We haven't checked 2024.1.
-- **Live simulation:** `scripts/sim build/run1` runs `xvlog/xelab/xsim` on the folder's `testbench.v` from the command line. SCC uses Icarus instead.
+- **Live simulation:** `vivado -mode batch -source scripts/sim.tcl -tclargs build/run1` runs `xvlog/xelab/xsim` on the folder's `testbench.v` and writes `sim.log` there. SCC uses Icarus instead.
 - **Build time:** unmeasured. We'll measure it at the first board test; the demo plan covers the software walkthrough while a build runs.
 - **Fallback:** pre-built bitstreams of two prepared examples, kept on the laptop.
 
