@@ -304,3 +304,24 @@ The spec's rules: fit strictly in 30 minutes, show every part of the software an
 - **Before the slot:** the laptop is on power with sleep turned off, the repo is at the submitted version, the board shows a prebuilt example, two PowerShell windows are open, and the README has a copy-paste command block.
 - **Roles:** Lohit drives the laptop (the tool and Vivado) and Ritwick the board. They swap for one run, so each shows the other's half. Ritwick still has to agree.
 - **Runs:** the professor picks all three. If he asks for ideas: a constrained mode with tight limits, then `custom` with `--latency` one step above the minimum, or `--mul-cycles 2`.
+
+### N. Work split and timeline (decided 11/8)
+
+- **Lohit:** the front end and the board side, both done. Then the generator:
+  - binding, `hls_core.v`, `testbench.v` and `schedule.txt`
+  - the printed schedule grid, the observe-code table and the board map
+  - `--eval`
+  - a schedule checker that the generator and the tests both use
+
+  After the generator: the examples with their generated output, the end-to-end tests and the README.
+- **Ritwick:** `schedule()` for all five modes with J's property tests, on his own branch made from `origin/Lohit`. Done and merged on 11/8 (`542373f`).
+- **Days:** everything is finished by Monday night.
+  - **Sun 11/8:** Ritwick's schedulers merged; the generator started.
+  - **Mon 11/9:**
+    - The generator, then the end-to-end tests on SCC: every example in all five modes, with 1- and 2-step multiply, simulated in Icarus.
+    - The examples and the README.
+    - Board day on the ThinkPad: program the examples and check them against `--eval`, run the simulation, make the fallback bitstreams, time a 20-equation build, and do one timed 30-minute rehearsal.
+    - Merge into `main` and check the repo is public.
+  - **Tue 11/10:** submit the link, then the demo.
+- **If we fall behind, cut in this order:** fewer random test programs first, then the extra examples. We never cut a scheduler mode, `--export-ssa`, the testbench, the board run or the demo plan.
+- **Not code:** sign up for a demo slot (the spec requires it), and get the board to the ThinkPad on Monday.
