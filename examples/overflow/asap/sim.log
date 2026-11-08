@@ -1,0 +1,2 @@
+PASS 4096/4096
+testbench.v:94: $finish called at 573445000 (1ps)

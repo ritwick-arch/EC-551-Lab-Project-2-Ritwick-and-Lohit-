@@ -1,0 +1,1 @@
+error: line 3: expected 'dst = a op b' with op one of + - *, got: Y = X / 2

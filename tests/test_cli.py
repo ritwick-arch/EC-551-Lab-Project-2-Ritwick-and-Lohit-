@@ -35,7 +35,8 @@ def test_export_ssa(spec, tmp_path, capsys):
     (["--schedule", "alap", "--add", "2"], "--add is only used by casap and calap"),
     (["--schedule", "casap", "--latency", "5"], "--latency is only used by alap, calap and custom"),
     (["--schedule", "casap", "--mul", "0"], "--mul must be at least 1"),
-    (["--mul-cycles", "0"], "--mul-cycles must be at least 1"),
+    (["--mul-cycles", "0"], "--mul-cycles must be 1-254"),
+    (["--add-cycles", "255"], "--add-cycles must be 1-254"),
     (["--schedule", "alap", "--latency", "255"], "--latency must be 1-254"),
     (["--set", "E=3"], "--set E: E is not an input of this file"),
     (["--set", "A"], "--set expects NAME=VALUE, got: A"),
@@ -53,7 +54,7 @@ def test_flag_errors(spec, flags, message):
 
 def test_flags_accepted(spec):
     assert main([str(spec), "--schedule", "CALAP", "--add", "1", "--latency", "6", "--mul-cycles", "2",
-                 "--set", "A=31", "--eval", "A=3", "B=4"]) == 0
+                 "--set", "A=31", "--eval", "B=4"]) == 0
 
 
 def test_missing_file_argument(capsys):

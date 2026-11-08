@@ -1,0 +1,5 @@
+# Results wrap at 16 bits: X goes negative when A < B, Y overflows, and 300 * 300 = 90000 wraps to 24464.
+X = A - B
+Y = 65535 + A
+Z = 300 * 300
+W = X * Y

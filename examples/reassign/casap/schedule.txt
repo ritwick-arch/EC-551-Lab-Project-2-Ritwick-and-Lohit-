@@ -1,0 +1,45 @@
+# python -m hls examples/reassign/reassign.txt --schedule casap --mul 1 --mul-cycles 2 --export-ssa examples/reassign/reassign.ssa.txt --out examples/reassign/casap
+
+hls: examples/reassign/reassign.txt (4 equations)
+inputs:  A_0, B_0
+outputs: X = X_2, A = A_1, Y = Y_1
+
+board
+  SW11-8   A_0
+  SW7-4    B_0
+  SW3-0    unused
+  SW15-12  observe code within the page; BTNU next page, BTNC step, CPU_RESETN reset
+
+SSA
+  X_1 = A_0 + B_0
+  A_1 = A_0 + A_0
+  X_2 = X_1 * A_1
+  Y_1 = X_2 - B_0
+
+DAG
+  line  statement        depends on
+  2     X_1 = A_0 + B_0  -
+  3     A_1 = A_0 + A_0  -
+  4     X_2 = X_1 * A_1  X_1, A_1
+  5     Y_1 = X_2 - B_0  X_2
+
+schedule (casap, unit limits: mul 1, mul takes 2 steps)
+  step  add0             add1             sub0             mul0
+  01    X_1 = A_0 + B_0  A_1 = A_0 + A_0  .                .
+  02    .                .                .                X_2 = X_1 * A_1 (1/2)
+  03    .                .                .                X_2 = X_1 * A_1 (2/2)
+  04    .                .                Y_1 = X_2 - B_0  .
+latency 4 steps, 5 presses to DONE; units: 2 adders, 1 subtractor, 1 multiplier
+
+observe codes (code = 16 x page + SW15-12, in hex as the display shows it)
+  code  page  SW15-12  shows
+  00    0     0        add0 output (---- when idle)
+  01    0     1        add1 output (---- when idle)
+  02    0     2        sub0 output (---- when idle)
+  03    0     3        mul0 output (---- when idle)
+  04    0     4        X_1
+  05    0     5        A_1 (output A)
+  06    0     6        X_2 (output X)
+  07    0     7        Y_1 (output Y)
+  08    0     8        A_0 (SW11-8)
+  09    0     9        B_0 (SW7-4)

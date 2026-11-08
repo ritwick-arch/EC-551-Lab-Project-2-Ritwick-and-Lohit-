@@ -1,0 +1,4 @@
+# A constant-only op (K), constants as operands, and one input, so two switch slots are unused.
+K = 3 * 4
+X = A + K
+Y = X - 5

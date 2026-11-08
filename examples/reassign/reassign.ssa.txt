@@ -1,0 +1,6 @@
+# inputs: A_0 B_0
+# outputs: X_2 A_1 Y_1
+X_1 = A_0 + B_0
+A_1 = A_0 + A_0
+X_2 = X_1 * A_1
+Y_1 = X_2 - B_0

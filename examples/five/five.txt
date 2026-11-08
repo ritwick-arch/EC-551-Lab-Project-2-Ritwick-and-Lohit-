@@ -1,0 +1,6 @@
+# All five schedules differ (casap and calap with one unit of each type, custom with --latency 3).
+X = C + A
+Y = B + A
+Z = Y * A
+W = C - B
+V = X * Y

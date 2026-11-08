@@ -1,0 +1,5 @@
+# inputs: A_0
+# outputs: K_1 X_1 Y_1
+K_1 = 3 * 4
+X_1 = A_0 + K_1
+Y_1 = X_1 - 5

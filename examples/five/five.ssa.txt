@@ -1,0 +1,7 @@
+# inputs: C_0 A_0 B_0
+# outputs: X_1 Y_1 Z_1 W_1 V_1
+X_1 = C_0 + A_0
+Y_1 = B_0 + A_0
+Z_1 = Y_1 * A_0
+W_1 = C_0 - B_0
+V_1 = X_1 * Y_1

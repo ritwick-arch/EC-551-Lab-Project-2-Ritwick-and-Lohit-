@@ -1,0 +1,40 @@
+# python -m hls examples/constant/constant.txt --schedule alap --latency 4 --export-ssa examples/constant/constant.ssa.txt --out examples/constant/alap
+
+hls: examples/constant/constant.txt (3 equations)
+inputs:  A_0
+outputs: K = K_1, X = X_1, Y = Y_1
+
+board
+  SW11-8   A_0
+  SW7-4    unused
+  SW3-0    unused
+  SW15-12  observe code within the page; BTNU next page, BTNC step, CPU_RESETN reset
+
+SSA
+  K_1 = 3 * 4
+  X_1 = A_0 + K_1
+  Y_1 = X_1 - 5
+
+DAG
+  line  statement        depends on
+  2     K_1 = 3 * 4      -
+  3     X_1 = A_0 + K_1  K_1
+  4     Y_1 = X_1 - 5    X_1
+
+schedule (alap, latency 4)
+  step  add0             sub0           mul0
+  01    .                .              .
+  02    .                .              K_1 = 3 * 4
+  03    X_1 = A_0 + K_1  .              .
+  04    .                Y_1 = X_1 - 5  .
+latency 4 steps, 5 presses to DONE; units: 1 adder, 1 subtractor, 1 multiplier
+
+observe codes (code = 16 x page + SW15-12, in hex as the display shows it)
+  code  page  SW15-12  shows
+  00    0     0        add0 output (---- when idle)
+  01    0     1        sub0 output (---- when idle)
+  02    0     2        mul0 output (---- when idle)
+  03    0     3        K_1 (output K)
+  04    0     4        X_1 (output X)
+  05    0     5        Y_1 (output Y)
+  06    0     6        A_0 (SW11-8)

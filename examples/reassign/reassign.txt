@@ -1,0 +1,5 @@
+# Reassignment: X is assigned twice, the input A is reassigned, and A = A + A reads A on both ports.
+X = A + B
+A = A + A
+X = X * A
+Y = X - B
