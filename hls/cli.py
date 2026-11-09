@@ -142,6 +142,9 @@ def main(argv=None):
         design = build_design(program, dag, steps, cycles, fixed)
         if args.out is not None:
             check_slots(design)
+            if Path(args.out).exists() and not Path(args.out).is_dir():
+                raise ValueError(f"--out {args.out} is a file, not a folder")
+            Path(args.out).mkdir(parents=True, exist_ok=True)
         values = _eval_values(design, given) if args.eval is not None else None
         report = "\n\n".join([summary(args.file, program), board_section(design), ssa_section(program),
                                dag_section(dag), schedule_section(design, _heading(args, dag, steps, cycles, limits)),

@@ -76,3 +76,10 @@ def test_error_after_parsing_writes_nothing(spec, tmp_path):
     with pytest.raises(SystemExit, match="^error: --set E: "):
         main([str(spec), "--set", "E=3", "--export-ssa", str(target)])
     assert not target.parent.exists()
+
+
+def test_out_naming_a_file_prints_and_writes_nothing(spec, tmp_path, capsys):
+    ssa = tmp_path / "spec.ssa.txt"
+    with pytest.raises(SystemExit, match="^error: --out .*spec.txt is a file, not a folder$"):
+        main([str(spec), "--export-ssa", str(ssa), "--out", str(spec)])
+    assert capsys.readouterr().out == "" and not ssa.exists() and spec.read_text() == SPEC

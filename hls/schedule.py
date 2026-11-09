@@ -248,6 +248,21 @@ def schedule(dag, mode, limits=None, latency=None, cycles=None) -> list[int]:
             latency = total_length
 
         if latency < total_length:
+            # Same length as ASAP: the dependency chain sets it, not the limits.
+            minimum_latency = max(
+                (
+                    asap_starts[i] + durations[op.kind] - 1
+                    for i, op in enumerate(dag.ops)
+                ),
+                default=0
+            )
+
+            if total_length == minimum_latency:
+                raise ValueError(
+                    f"Latency {latency} is shorter than "
+                    f"the minimum possible latency {minimum_latency}"
+                )
+
             raise ValueError(
                 f"Resource limits require {total_length} steps, "
                 f"but latency is {latency}"

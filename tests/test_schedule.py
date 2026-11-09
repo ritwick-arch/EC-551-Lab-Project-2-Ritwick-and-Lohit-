@@ -244,6 +244,15 @@ def test_scheduler_errors():
     with pytest.raises(ValueError):
         schedule(dag, "alap", latency=1)
 
+    # Below the critical path, calap names the path, not the limits.
+    with pytest.raises(ValueError, match="minimum possible latency 2"):
+        schedule(dag, "calap", latency=1)
+
+    # Limits that lengthen the schedule are named as the cause.
+    with pytest.raises(ValueError, match="Resource limits require 2 steps"):
+        schedule(DAG([Op(0, "X_1", "add", "A", "B", 1), Op(1, "Y_1", "add", "C", "D", 2)],
+                     [[], []], [[], []]), "calap", limits={"add": 1}, latency=1)
+
     # Custom cannot meet impossible latency.
     with pytest.raises(ValueError):
         schedule(dag, "custom", latency=1)
