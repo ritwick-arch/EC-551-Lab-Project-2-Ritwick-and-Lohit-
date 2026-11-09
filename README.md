@@ -165,30 +165,33 @@ build/                  live demo runs (git-ignored)
   - error cases, `--eval`, and byte-identical reruns
 - **Generated testbench:** `testbench.v` drives `hls_core` with all 4096 switch settings. For each one it resets, sets the switches, presses L+1 times (changing the switches after the first press, which must be ignored), and checks `done`. Then it reads every observe code and compares it with the equations written out directly in Verilog, with no schedule involved. It prints `PASS 4096/4096`.
 - **End to end on SCC:** every example in all five modes, with 1- and 2-step multiply, plus random programs, generated and simulated in Icarus. A trace bench also checks every observe code in every state against the `--eval` model. Verilator `-Wall` lint and a Yosys latch check run on every committed core.
-- **Vivado (laptop):** the spec example builds in about 2 minutes with timing met at 100 MHz (WNS +2.07 ns), and its testbench passes in xsim.
+- **Vivado (laptop, measured 11/9):**
+  - The spec example builds in 77 s, with timing met at 100 MHz (WNS +2.07 ns).
+  - The 20-equation example (`twenty`, casap) builds in 134 s and uses 433 LUTs, 418 flip-flops and 2 DSPs. Its testbench passes in xsim in 14 s.
+  - Vivado reports that `twenty` misses 100 MHz by 1.3 ns, so its build prints a timing warning. The worst path runs from the FSM through a multiplier and the observe mux into the 7-segment display register. Every path through the core starts at a register that changes only on a press, and results are only written on a press, so at worst the display is wrong for one 10 ns clock after a press.
 
 ## Demo plan (30 minutes)
 
 The professor writes the equations, picks the mode and limits, and directs three runs. The runs overlap: each run's build starts as soon as it compiles, and we explain that run while it builds.
 
 **Every run follows the same steps:**
-1. He writes his equations in Notepad as `build\runN.txt`. Before run 1 he gets the rules from [Input format](#input-format).
-2. We compile with his mode and limits: `python -m hls build\runN.txt --schedule ... --out build\runN`.
+1. The professor writes the equations in Notepad as `build\runN.txt`. Before run 1 they get the rules from [Input format](#input-format).
+2. We compile with the professor's mode and limits: `python -m hls build\runN.txt --schedule ... --out build\runN`.
 3. We start the build and the simulation in a second window.
 4. While it builds, we walk through the printed report and `hls_core.v`, then show the testbench's `PASS 4096/4096`.
-5. We program the board. He picks switch values, and `--eval` with the same flags prints what he should see.
-6. He steps with BTNC, switching the observe code between units, and checks every output at DONE.
+5. We program the board. The professor picks switch values, and `--eval` with the same flags prints what the board should show.
+6. The professor steps with BTNC, switching the observe code between units, and checks every output at DONE.
 
 | min | who | what |
 |---|---|---|
-| 0–2 | Ritwick | The architecture in one picture, and why BTNC is a clock enable rather than a clock. He writes run 1. |
-| 2–8 | Lohit | Run 1: compile, start the build and sim. Then the SSA, the DAG, all five schedules for his equations, `hls_core.v`, PASS. Ask for run 2. |
+| 0–2 | Ritwick | The architecture in one picture, and why BTNC is a clock enable rather than a clock. The professor writes run 1. |
+| 2–8 | Lohit | Run 1: compile, start the build and sim. Then the SSA, the DAG, all five schedules for these equations, `hls_core.v`, PASS. Ask for run 2. |
 | 8–9 | Lohit | Compile run 2 and start its build. |
 | 9–13 | Ritwick | Run 1 on the board. |
-| 13–14 | Lohit | Run 2's output: what his limits changed. He writes run 3. |
+| 13–14 | Lohit | Run 2's output: what the new limits changed. The professor writes run 3. |
 | 14–18 | Ritwick | Run 2 on the board, while Lohit starts run 3's build. |
 | 18–23 | both | Run 3's output, then run 3 on the board. |
-| 23–30 | both | Buffer: his questions, a bad line to show an error message, or a fallback. |
+| 23–30 | both | Buffer: the professor's questions, a bad line to show an error message, or a fallback. |
 
 **Where each part of the assignment is shown:**
 - Parse errors: one deliberately bad line.
@@ -196,12 +199,12 @@ The professor writes the equations, picks the mode and limits, and directs three
 - Muxes, registers, FSM and unit counts: `hls_core.v` in run 1, then what changed in runs 2 and 3.
 - Testbench, build and programming, the step button, observe select and 7-segment display: every run.
 
-**If he asks for ideas:** a constrained mode with tight limits (`--schedule casap --mul 1`), then `custom` with `--latency` one step above the minimum, or `--mul-cycles 2`.
+**If the professor asks for ideas:** a constrained mode with tight limits (`--schedule casap --mul 1`), then `custom` with `--latency` one step above the minimum, or `--mul-cycles 2`.
 
 **Fallbacks:**
-- The build fails or isn't done after about 8 minutes: show his run passing in simulation, continue on the board with the prebuilt example of the same mode (`examples/five/<mode>`), and return to his run when the build finishes.
+- The build fails or isn't done after about 8 minutes: show the run passing in simulation, continue on the board with the prebuilt bitstream of the same mode (`program.tcl -tclargs build/five_<mode>`, built from `examples/five/<mode>`), and return to the run when the build finishes.
 - Programming fails: replug the USB and rerun `program.tcl`.
-- The tool rejects his input: the error names the line, and we fix it with him.
+- The tool rejects the input: the error names the line, and we fix it together.
 
 **Before the slot:** the laptop is on power with sleep off, the repo is at the submitted commit, the board shows a prebuilt example, two PowerShell windows are open in the repo, and the fallback bitstreams are built.
 

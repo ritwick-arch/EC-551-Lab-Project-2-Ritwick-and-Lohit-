@@ -263,8 +263,11 @@ def schedule(dag, mode, limits=None, latency=None, cycles=None) -> list[int]:
   - It runs `catch {set_param labtools.enable_cs_server false}` before `open_hw_manager`.
   - The `catch` keeps the script working on a Vivado version that lacks that setting. We haven't checked 2024.1.
 - **Live simulation:** `vivado -mode batch -source scripts/sim.tcl -tclargs build/run1` runs `xvlog/xelab/xsim` on the folder's `testbench.v` and writes `sim.log` there. SCC uses Icarus instead.
-- **Build time (measured 11/7 on the ThinkPad, spec example):** 127 s for the whole build, 111 s of it inside Vivado, with timing met at 100 MHz (WNS +2.07 ns). The simulation takes 14 s. A 20-equation design still needs timing once the generator exists.
-- **Fallback:** pre-built bitstreams of two prepared examples, kept on the laptop.
+- **Build time (measured 11/7 on the ThinkPad, spec example):** 127 s for the whole build, 111 s of it inside Vivado, with timing met at 100 MHz (WNS +2.07 ns). The simulation takes 14 s.
+- **Build time with generated cores (measured 11/9):** the spec example takes 77 s (WNS +2.07 ns). The 20-equation `twenty` example (casap) takes 134 s, 116 s of it inside Vivado, and uses 433 LUTs, 418 flip-flops and 2 DSPs; its simulation passes in 14 s.
+  - `twenty` misses 100 MHz by 1.3 ns (WNS -1.30 ns). The worst path runs from the FSM through a multiplier and the observe mux into the 7-segment register.
+  - Left as is (Lohit, 11/9): warnings don't cost points, and results are only written on a press, so at worst the display is wrong for one clock after a press.
+- **Fallback:** pre-built bitstreams of `examples/five` in each of the five modes, kept on the laptop in `build/five_<mode>`.
 
 ### M. Demo plan (decided 11/7)
 
