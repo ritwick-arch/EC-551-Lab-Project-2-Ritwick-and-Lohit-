@@ -212,3 +212,7 @@ The professor writes the equations, picks the mode and limits, and directs three
 
 - **Lohit:** the parser, SSA and DAG; the generator (binding, Verilog, testbench, report, `--eval`); the board files and Vivado scripts; the examples and end-to-end tests.
 - **Ritwick:** the five schedulers and their property tests.
+
+## AI usage
+
+We used Claude (Anthropic) as a coding assistant for design discussion, parts of the code and tests, and this README.
